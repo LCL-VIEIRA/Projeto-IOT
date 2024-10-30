@@ -1,7 +1,8 @@
 #include "WiFi.h"
 #include "esp_camera.h"
 #include <ArduinoJson.h>
-#include <HTTPClient.h> 
+#include <HTTPClient.h>
+#include "Base64.h"  
 
 
 const char* ssid = "";
@@ -70,6 +71,9 @@ void cameraInit() {
   Serial.println("Câmera inicializada com sucesso!");
 }
 
+String convertImageToBase64(camera_fb_t *fb) {
+  return base64::encode(fb->buf, fb->len);
+}
 
 void sendImageToFirebase() {
   camera_fb_t *fb = esp_camera_fb_get();
@@ -78,10 +82,12 @@ void sendImageToFirebase() {
     return;
   }
 
+  String imageBase64 = convertImageToBase64(fb);
+  esp_camera_fb_return(fb); 
 
   StaticJsonDocument<50000> doc;
   doc["timestamp"] = millis();
-  doc["image"] = Image;
+  doc["image"] = imageBase64;
 
   String json;
   serializeJson(doc, json);
